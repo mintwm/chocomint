@@ -10,11 +10,10 @@ interface wm-imports {
     use types.{window-id};
 
     get-elements: func() -> list<window-id>;
-    set-window-size: func(window: window-id, width: u32, height: u32);
-    set-window-pos: func(window: window-id, x: u32, y: u32);
+    set-window-size: func(window: window-id, width: s32, height: s32);
+    set-window-pos: func(window: window-id, x: s32, y: s32);
 
-    get-output-size: func() -> tuple<u32, u32>;
-    send-configure: func(window: window-id);
+    get-output-size: func() -> tuple<s32, s32>;
 }
 
 interface wm-exports {

@@ -15,7 +15,7 @@ use smithay::{
 };
 use std::cell::RefCell;
 
-use crate::compositor::{backend::Backend, state::App};
+use crate::compositor::{api::WindowKey, backend::Backend, state::App};
 
 bitflags::bitflags! {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -134,13 +134,13 @@ impl<B: Backend + 'static> PointerGrab<App<B>> for ResizeSurfaceGrab<B> {
             new_window_height.max(min_height).min(max_height),
         ));
 
-        let xdg = self.window.toplevel().unwrap();
-        xdg.with_pending_state(|state| {
+        let window_key = self.window.user_data().get::<WindowKey>().unwrap();
+        let mapped_windows = &mut data.globals().mapped_windows;
+        let mapped_window = mapped_windows.get_mut(*window_key).unwrap();
+        mapped_window.with_pending_state(|state| {
             state.states.set(xdg_toplevel::State::Resizing);
             state.size = Some(self.last_window_size);
         });
-
-        xdg.send_pending_configure();
     }
 
     fn relative_motion(
@@ -169,14 +169,15 @@ impl<B: Backend + 'static> PointerGrab<App<B>> for ResizeSurfaceGrab<B> {
             // No more buttons are pressed, release the grab.
             handle.unset_grab(self, data, event.serial, event.time, true);
 
-            let xdg = self.window.toplevel().unwrap();
-            xdg.with_pending_state(|state| {
+            let window_key = self.window.user_data().get::<WindowKey>().unwrap();
+            let mapped_windows = &mut data.globals().mapped_windows;
+            let mapped_window = mapped_windows.get_mut(*window_key).unwrap();
+            mapped_window.with_pending_state(|state| {
                 state.states.unset(xdg_toplevel::State::Resizing);
                 state.size = Some(self.last_window_size);
             });
 
-            xdg.send_pending_configure();
-
+            let xdg = self.window.toplevel().unwrap();
             ResizeSurfaceState::with(xdg.wl_surface(), |state| {
                 *state = ResizeSurfaceState::WaitingForLastCommit {
                     edges: self.edges,

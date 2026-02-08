@@ -9,7 +9,7 @@ use slotmap::{KeyData, SlotMap, new_key_type};
 use smithay::desktop::{Space, Window};
 use wasmtime::component::HasData;
 
-use crate::compositor::api::general::fusion::compositor::types::WindowId;
+use crate::compositor::{api::general::fusion::compositor::types::WindowId, mapped::MappedWindow};
 
 pub mod general;
 
@@ -105,7 +105,7 @@ impl From<WindowKey> for WindowId {
 }
 
 pub struct CompositorGlobals {
-    pub mapped_windows: SlotMap<WindowKey, Window>,
+    pub mapped_windows: SlotMap<WindowKey, MappedWindow>,
     pub space: Space<Window>,
 }
 

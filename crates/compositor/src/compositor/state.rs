@@ -58,8 +58,8 @@ use smithay::{
             },
         },
         shell::xdg::{
-            PopupSurface, PositionerState, ToplevelSurface, XdgShellHandler, XdgShellState,
-            XdgToplevelSurfaceData,
+            Configure, PopupSurface, PositionerState, ToplevelSurface, XdgShellHandler,
+            XdgShellState, XdgToplevelSurfaceData,
             decoration::{XdgDecorationHandler, XdgDecorationState},
         },
         shm::{ShmHandler, ShmState},
@@ -83,7 +83,11 @@ use crate::compositor::{
     backend::Backend,
     cursor::InputState,
     data,
-    grabs::{MoveSurfaceGrab, ResizeSurfaceGrab, resize_grab},
+    grabs::{
+        MoveSurfaceGrab, ResizeSurfaceGrab,
+        resize_grab::{self},
+    },
+    mapped::MappedWindow,
     output::OutputState,
     udev::UdevOutputState,
 };
@@ -402,7 +406,10 @@ impl<B: Backend + 'static> XdgShellHandler for App<B> {
             let mut globals = self.globals.lock().unwrap();
             let space = &mut globals.space;
 
-            globals.mapped_windows.insert(window.clone())
+            space.map_element(window.clone(), (0, 0), true);
+            globals
+                .mapped_windows
+                .insert(MappedWindow::new(window.clone()))
         };
         window.user_data().insert_if_missing(|| window_id);
 
@@ -432,9 +439,9 @@ impl<B: Backend + 'static> XdgShellHandler for App<B> {
             };
 
             let window_id = *window.user_data().get::<WindowKey>().unwrap();
-            let window = globals.mapped_windows.remove(window_id).unwrap();
+            let mapped_window = globals.mapped_windows.remove(window_id).unwrap();
             let space = &mut globals.space;
-            space.unmap_elem(&window);
+            space.unmap_elem(mapped_window.window());
             window_id
         };
 
@@ -541,6 +548,28 @@ impl<B: Backend + 'static> XdgShellHandler for App<B> {
 
     fn grab(&mut self, _surface: PopupSurface, _seat: WlSeat, _serial: Serial) {
         // TODO popup grabs
+    }
+
+    fn ack_configure(&mut self, surface: WlSurface, configure: Configure) {
+        match configure {
+            Configure::Toplevel(configure) => {
+                let space = unsafe {
+                    let ptr = &raw const self.globals().space;
+                    &*ptr
+                };
+
+                if let Some(window) = space
+                    .elements()
+                    .find(|w| *w.toplevel().unwrap().wl_surface() == surface)
+                {
+                    let mapped_windows = &mut self.globals().mapped_windows;
+                    let window_id = window.user_data().get::<WindowKey>().unwrap();
+                    let mapped_window = mapped_windows.get_mut(*window_id).unwrap();
+                    mapped_window.ack_configure(configure.serial);
+                }
+            }
+            Configure::Popup(_) => { /* TODO */ }
+        }
     }
 }
 

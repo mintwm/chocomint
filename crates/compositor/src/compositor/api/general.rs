@@ -71,55 +71,37 @@ impl wm_imports::Host for CompositorContext {
             .collect()
     }
 
-    fn set_window_size(&mut self, window: WindowId, width: u32, height: u32) {
-        let compositor = self.compositor_mut();
-        let window = compositor
+    fn set_window_size(&mut self, window: WindowId, width: i32, height: i32) {
+        let mut compositor = self.compositor_mut();
+        let mapped_window = compositor
+            .mapped_windows
+            .get_mut(WindowKey(KeyData::from_ffi(window.inner)))
+            .unwrap();
+
+        mapped_window.set_window_size(width, height);
+    }
+
+    fn set_window_pos(&mut self, window: WindowId, x: i32, y: i32) {
+        let mut compositor = self.compositor_mut();
+        let mapped_window = compositor
             .mapped_windows
             .get(WindowKey(KeyData::from_ffi(window.inner)))
             .unwrap();
 
-        let surface = window.toplevel().unwrap();
-        surface.with_pending_state(|state| {
-            state.size = Some((width as i32, height as i32).into());
-        });
+        let window = mapped_window.window().clone();
+        compositor.space.map_element(window, (x, y), false);
     }
 
-    fn set_window_pos(&mut self, window: WindowId, x: u32, y: u32) {
-        let mut compositor = self.compositor_mut();
-        let window = compositor
-            .mapped_windows
-            .get(WindowKey(KeyData::from_ffi(window.inner)))
-            .unwrap()
-            .clone();
-
-        compositor
-            .space
-            .map_element(window, (x as i32, y as i32), true);
-    }
-
-    fn get_output_size(&mut self) -> (u32, u32) {
+    fn get_output_size(&mut self) -> (i32, i32) {
         let compositor = self.compositor();
         if let Some(output) = compositor.space.outputs().next() {
             let geometry = compositor
                 .space
                 .output_geometry(output)
                 .expect("Output not in space");
-            let screen_width = geometry.size.w as u32;
-            let screen_height = geometry.size.h as u32;
-
-            (screen_width, screen_height)
+            (geometry.size.w, geometry.size.h)
         } else {
             panic!("TODO!")
-        }
-    }
-
-    fn send_configure(&mut self, window: WindowId) {
-        let mut compositor = self.compositor();
-        if let Some(window) = compositor
-            .mapped_windows
-            .get_mut(WindowKey(KeyData::from_ffi(window.inner)))
-        {
-            window.toplevel().unwrap().send_pending_configure();
         }
     }
 }

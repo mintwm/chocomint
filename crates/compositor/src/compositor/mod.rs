@@ -4,6 +4,7 @@ pub mod cursor;
 pub mod data;
 pub mod grabs;
 pub mod input;
+pub mod mapped;
 pub mod output;
 pub mod state;
 pub mod udev;

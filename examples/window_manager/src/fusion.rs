@@ -6,7 +6,7 @@ use crate::{
     WindowManager,
     fusion::fusion::compositor::{
         types::WindowId,
-        wm_imports::{get_output_size, send_configure, set_window_pos, set_window_size},
+        wm_imports::{get_output_size, set_window_pos, set_window_size},
     },
 };
 
@@ -31,15 +31,14 @@ impl GlobalState {
             return;
         }
         let (screen_width, screen_height) = get_output_size();
-        let width_per_window = screen_width / self.windows.len() as u32;
+        let width_per_window = screen_width / self.windows.len() as i32;
 
         for (i, window) in self.windows.iter().enumerate() {
             let window = *window;
-            let x_pos = i as u32 * width_per_window;
+            let x_pos = i as i32 * width_per_window;
             let y_pos = 0;
 
             set_window_size(window, width_per_window, screen_height);
-            send_configure(window);
             set_window_pos(window, x_pos, y_pos);
         }
     }

@@ -260,7 +260,7 @@ impl App<UdevData> {
         // SAFETY: the egl context is only active in this thread
         let mut gles = unsafe { GlesRenderer::new(egl_context) }.unwrap();
         //shaders::init(glow.borrow_mut());
-        gles.bind_wl_display(&self.display);
+        //gles.bind_wl_display(&self.display).unwrap();
 
         let egl_device = EGLDevice::device_for_display(gles.egl_context().display()).unwrap();
         let render_node = egl_device.try_get_render_node().unwrap().unwrap();
