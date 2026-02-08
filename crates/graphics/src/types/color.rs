@@ -1,6 +1,6 @@
 use derive_more::From;
 use glam::Vec4;
-use rand::Rng;
+use rand::RngExt;
 
 #[derive(Debug, Clone, PartialEq, From)]
 pub enum Color {
