@@ -22,6 +22,7 @@ chrono.workspace = true
 bitflags.workspace = true
 bytemuck.workspace = true
 derive_more.workspace = true
+clap.workspace = true
 
 #Compositor
 smithay.workspace = true

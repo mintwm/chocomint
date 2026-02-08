@@ -2,31 +2,64 @@
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::too_many_lines)]
+#![allow(clippy::upper_case_acronyms)]
+
+mod session;
+
 use std::time::Duration;
 
+use clap::{Parser, Subcommand};
 use tracing::trace_span;
 use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 mod compositor;
 
-use crate::compositor::{
-    udev::{UdevData, init_udev},
-    window::WinitBackend,
+use crate::{
+    compositor::{
+        udev::{UdevData, init_udev},
+        window::WinitBackend,
+    },
+    session::{SessionType, define_session_type},
 };
 use smithay::reexports::calloop::EventLoop;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+const XDG_SESSION_TYPE: &str = "XDG_SESSION_TYPE";
+
+fn setup_environment() {
     let filter = tracing_subscriber::EnvFilter::new("warn")
         .add_directive("compositor=trace".parse().unwrap())
         .add_directive("calloop=trace".parse().unwrap());
 
     tracing_subscriber::registry()
-        .with(filter) // Чтобы видеть логи в терминале
-        .with(tracing_tracy::TracyLayer::default()) // Отправка данных в профайлер
+        .with(filter)
+        .with(tracing_tracy::TracyLayer::default())
         .init();
+}
 
-    run_udev()?;
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Session>,
+}
 
+#[derive(Subcommand)]
+enum Session {
+    /// Run via Winit
+    Winit,
+
+    /// Run via Udev
+    Udev,
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cli = Cli::parse();
+    setup_environment();
+    match define_session_type(cli.command) {
+        SessionType::TTY => run_udev()?,
+        SessionType::Wayland => run_winit()?,
+        SessionType::Other(other) => panic!("{other} session type is not supported"),
+    }
     Ok(())
 }
 
@@ -37,11 +70,14 @@ fn run_winit() -> Result<(), Box<dyn std::error::Error>> {
     let backend = WinitBackend::new().unwrap();
     let mut data =
         compositor::init_compositor(event_loop.handle(), event_loop.get_signal(), backend)?;
+    compositor::window::run_winit(&mut data);
     event_loop.run(None, &mut data, |_| {})?;
     Ok(())
 }
 
 fn run_udev() -> Result<(), Box<dyn std::error::Error>> {
+    unsafe { std::env::set_var(XDG_SESSION_TYPE, "wayland") }
+
     let mut event_loop: EventLoop<compositor::data::Data<UdevData>> = EventLoop::try_new()?;
 
     let backend = UdevData::init(&event_loop.handle());

@@ -76,7 +76,7 @@ pub fn run_winit(data: &mut data::Data<WinitBackend>) {
     let start_time = std::time::Instant::now();
     let timer = Timer::immediate();
 
-    let mut output = data.state.backend.create_output();
+    let output = data.state.backend.create_output();
     let mode = data.state.backend.mode();
 
     // Клиенты могут получить доступ к глобальным объектам для получения физических свойств и состояния вывода.
@@ -116,7 +116,10 @@ pub fn run_winit(data: &mut data::Data<WinitBackend>) {
                     .backend
                     .winit
                     .dispatch_new_events(|event| match event {
-                        WinitEvent::Resized { size, scale_factor } => {
+                        WinitEvent::Resized {
+                            size,
+                            scale_factor: _,
+                        } => {
                             output.change_current_state(
                                 Some(Mode {
                                     size,
@@ -152,7 +155,7 @@ pub fn run_winit(data: &mut data::Data<WinitBackend>) {
                     [space],
                     &[],
                     &mut output_damage_tracker,
-                    [0.1, 0.1, 0.1, 1.0],
+                    [0.8, 0.8, 0.8, 1.0],
                 )
                 .unwrap();
             }
