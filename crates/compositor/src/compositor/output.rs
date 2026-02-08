@@ -11,7 +11,6 @@ pub enum RenderState {
     #[default]
     Idle,
     Queued,
-    Render,
 }
 
 #[derive(Default)]
@@ -24,6 +23,8 @@ impl OutputState {
         self.outputs.insert(output, RenderState::Queued);
     }
 
+    //TODO
+    #[allow(unused)]
     pub fn remove_output(&mut self, output: &Output) {
         self.outputs.remove(output).unwrap();
     }

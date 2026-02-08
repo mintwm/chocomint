@@ -47,12 +47,6 @@ pub struct UnsafeCompositorGlobals {
     inner: *mut CompositorGlobals,
 }
 
-impl UnsafeCompositorGlobals {
-    pub fn new(globals: *mut CompositorGlobals) -> Self {
-        Self { inner: globals }
-    }
-}
-
 impl core::ops::Deref for UnsafeCompositorGlobals {
     type Target = CompositorGlobals;
 
@@ -72,7 +66,7 @@ pub struct CompositorContextFactory {
 }
 
 impl InnerContextFactory<CompositorContext> for CompositorContextFactory {
-    fn generate(&self, capabilities: &[String]) -> CompositorContext {
+    fn generate(&self, _capabilities: &[String]) -> CompositorContext {
         let globals = self.globals.clone();
         let mut map = HashMap::new();
         map.insert(

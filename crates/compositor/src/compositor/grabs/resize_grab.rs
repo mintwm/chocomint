@@ -99,7 +99,7 @@ impl<B: Backend + 'static> PointerGrab<App<B>> for ResizeSurfaceGrab<B> {
                 delta.x = -delta.x;
             }
 
-            new_window_width = (self.initial_rect.size.w as f64 + delta.x) as i32;
+            new_window_width = (f64::from(self.initial_rect.size.w) + delta.x) as i32;
         }
 
         if self.edges.intersects(ResizeEdge::TOP | ResizeEdge::BOTTOM) {
@@ -107,7 +107,7 @@ impl<B: Backend + 'static> PointerGrab<App<B>> for ResizeSurfaceGrab<B> {
                 delta.y = -delta.y;
             }
 
-            new_window_height = (self.initial_rect.size.h as f64 + delta.y) as i32;
+            new_window_height = (f64::from(self.initial_rect.size.h) + delta.y) as i32;
         }
 
         let (min_size, max_size) =
@@ -161,10 +161,12 @@ impl<B: Backend + 'static> PointerGrab<App<B>> for ResizeSurfaceGrab<B> {
         handle: &mut PointerInnerHandle<'_, App<B>>,
         event: &ButtonEvent,
     ) {
+        const BTN_LEFT: u32 = 0x110;
+
         let _span = trace_span!("resize_surface_grab:button").entered();
+
         // The button is a button code as defined in the
         // Linux kernel's linux/input-event-codes.h header file, e.g. BTN_LEFT.
-        const BTN_LEFT: u32 = 0x110;
 
         handle.button(data, event);
 

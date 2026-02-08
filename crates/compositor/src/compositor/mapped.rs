@@ -62,7 +62,7 @@ impl MappedWindow {
             if inner_serial == serial {
                 self.next_configure_serial = None;
                 self.wait_ack_configure = false;
-                log::error!("confirm serial: {serial:#?}")
+                log::error!("confirm serial: {serial:#?}");
             } else {
                 log::error!("incorrect serial");
             }

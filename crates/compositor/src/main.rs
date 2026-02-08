@@ -3,6 +3,7 @@
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::upper_case_acronyms)]
+#![allow(clippy::doc_markdown)]
 
 mod session;
 
