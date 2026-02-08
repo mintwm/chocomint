@@ -15,7 +15,13 @@
         [DONE] DRM
         [WIP] Pointer handling
         [WIP] Keyboard handling
-        [WIP] Cursor themes
+
+        [Cursor]
+            Scale sources:
+                Output scale
+                XCURSOR_SIZE
+                Plugin config
+
         [WIP] UI
         Tests
         Benchmarks
@@ -23,3 +29,7 @@
         Hot swap (save state)
         Hot reload (save state)
         Logs
+
+    [Issues]
+        Black surface on resize (Firefox)
+        Run compostior with paused tty
