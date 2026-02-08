@@ -136,6 +136,7 @@ impl<B: Backend + SpecialActions> App<B> {
                 // Обычно это делается в PointerMotion, но для надежности можно и тут:
                 // pointer.motion(self, under.map(|(_, s)| (s, location)), ...);
 
+                drop(globals);
                 pointer.button(
                     self,
                     &ButtonEvent {
