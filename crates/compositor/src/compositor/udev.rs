@@ -34,6 +34,7 @@ use smithay::{
 };
 use std::time::Duration;
 use std::{collections::HashMap, path::Path};
+use tracing::trace_span;
 
 use ::drm::{
     control::{self, ModeFlags, ModeTypeFlags, connector, crtc},
@@ -146,6 +147,7 @@ impl UdevData {
         let input_backend = LibinputInputBackend::new(libinput.clone());
         handle
             .insert_source(input_backend, |mut event, (), data| {
+                let _span = trace_span!("libinput_backend").entered();
                 //state.handle_libinput_event(&mut event);
                 data.state.handle_input_event(event);
             })

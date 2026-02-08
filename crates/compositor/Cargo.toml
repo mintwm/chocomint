@@ -4,9 +4,12 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+tracing-tracy = "0.11.4"
+
 fusion-socket-protocol.workspace = true
 plugin-engine.workspace = true
-tracy-client.workspace = true
 toml.workspace = true
 thiserror.workspace = true
 serde.workspace = true
@@ -31,8 +34,6 @@ xcursor.workspace = true
 
 wasmtime.workspace = true
 slotmap.workspace = true
-
-tracing.workspace = true
 
 postcard.workspace = true
 

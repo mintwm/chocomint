@@ -2,6 +2,11 @@
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::too_many_lines)]
+use std::time::Duration;
+
+use tracing::trace_span;
+use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 mod compositor;
 
 use crate::compositor::{
@@ -9,28 +14,16 @@ use crate::compositor::{
     window::WinitBackend,
 };
 use smithay::reexports::calloop::EventLoop;
-use tracy_client::Client;
-
-fn setup_logging() {
-    use std::io::Write;
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-        .format(|buf, record| {
-            writeln!(
-                buf,
-                "[{} {}] {}",
-                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-                record.level(),
-                record.args()
-            )
-        })
-        .filter_level(log::LevelFilter::Warn)
-        //.filter_level(log::LevelFilter::Debug)
-        .init();
-}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    Client::start();
-    setup_logging();
+    let filter = tracing_subscriber::EnvFilter::new("warn")
+        .add_directive("compositor=trace".parse().unwrap())
+        .add_directive("calloop=trace".parse().unwrap());
+
+    tracing_subscriber::registry()
+        .with(filter) // Чтобы видеть логи в терминале
+        .with(tracing_tracy::TracyLayer::default()) // Отправка данных в профайлер
+        .init();
 
     run_udev()?;
 
@@ -57,11 +50,32 @@ fn run_udev() -> Result<(), Box<dyn std::error::Error>> {
 
     init_udev(&mut data.state);
 
-    event_loop.run(None, &mut data, |data| {
-        data.state.render_all();
-        data.state.handle_socket();
-        data.state.engine.load_packages();
-        data.display.flush_clients().unwrap();
+    event_loop.run(Duration::from_secs(10), &mut data, |data| {
+        let span = trace_span!("event_loop").entered();
+        span.in_scope(|| {
+            let span = trace_span!("plugin_engine").entered();
+            span.in_scope(|| {
+                data.state.handle_socket();
+                data.state.engine.load_packages();
+            });
+            drop(span);
+
+            let span = trace_span!("render_all").entered();
+            span.in_scope(|| {
+                data.state.render_all();
+            });
+            drop(span);
+
+            let span = trace_span!("send_pending_configure").entered();
+            span.in_scope(|| {
+                for mapped_window in data.state.globals().mapped_windows.values_mut() {
+                    mapped_window.send_pending_configure();
+                }
+            });
+            drop(span);
+
+            data.display.flush_clients().unwrap();
+        });
     })?;
     Ok(())
 }

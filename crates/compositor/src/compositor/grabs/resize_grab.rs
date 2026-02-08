@@ -14,6 +14,7 @@ use smithay::{
     wayland::{compositor, shell::xdg::SurfaceCachedState},
 };
 use std::cell::RefCell;
+use tracing::trace_span;
 
 use crate::compositor::{api::WindowKey, backend::Backend, state::App};
 
@@ -84,6 +85,7 @@ impl<B: Backend + 'static> PointerGrab<App<B>> for ResizeSurfaceGrab<B> {
         _focus: Option<(WlSurface, Point<f64, Logical>)>,
         event: &MotionEvent,
     ) {
+        let _span = trace_span!("resize_surface_grab:motion").entered();
         // While the grab is active, no client has pointer focus
         handle.motion(data, None, event);
 
@@ -159,11 +161,12 @@ impl<B: Backend + 'static> PointerGrab<App<B>> for ResizeSurfaceGrab<B> {
         handle: &mut PointerInnerHandle<'_, App<B>>,
         event: &ButtonEvent,
     ) {
-        handle.button(data, event);
-
+        let _span = trace_span!("resize_surface_grab:button").entered();
         // The button is a button code as defined in the
         // Linux kernel's linux/input-event-codes.h header file, e.g. BTN_LEFT.
         const BTN_LEFT: u32 = 0x110;
+
+        handle.button(data, event);
 
         if !handle.current_pressed().contains(&BTN_LEFT) {
             // No more buttons are pressed, release the grab.

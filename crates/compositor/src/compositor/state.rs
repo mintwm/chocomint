@@ -66,6 +66,7 @@ use smithay::{
     },
 };
 use smithay_drm_extras::drm_scanner;
+use tracing::trace_span;
 use wayland_server::{
     Client, DisplayHandle, Resource,
     backend::ObjectId,
@@ -129,6 +130,7 @@ pub struct App<B: Backend + 'static> {
 
 impl<B: Backend> App<B> {
     pub fn globals(&self) -> MutexGuard<'_, CompositorGlobals> {
+        let _span = trace_span!("globals_mutex").entered();
         self.globals.lock().unwrap()
     }
 
