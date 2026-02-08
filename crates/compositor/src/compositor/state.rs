@@ -22,8 +22,10 @@ use smithay::{
         renderer::{element::RenderElement, utils::on_commit_buffer_handler},
         session::libseat::LibSeatSession,
     },
-    delegate_compositor, delegate_data_device, delegate_dmabuf, delegate_output, delegate_seat,
-    delegate_shm, delegate_xdg_decoration, delegate_xdg_shell,
+    delegate_compositor, delegate_cursor_shape, delegate_data_device, delegate_dmabuf,
+    delegate_fractional_scale, delegate_output, delegate_pointer_constraints,
+    delegate_presentation, delegate_relative_pointer, delegate_seat, delegate_shm,
+    delegate_viewporter, delegate_xdg_decoration, delegate_xdg_shell, delegate_xwayland_shell,
     desktop::{
         PopupKind, PopupManager, Space, Window, find_popup_root_surface, get_popup_toplevel_coords,
     },
@@ -48,9 +50,19 @@ use smithay::{
             CompositorClientState, CompositorHandler, CompositorState, get_parent,
             is_sync_subsurface, with_states,
         },
+        cursor_shape::CursorShapeManagerState,
         dmabuf::DmabufHandler,
+        fractional_scale::{
+            self, FractionalScaleHandler, FractionalScaleManagerState, FractionalScaleState,
+        },
         input_method::InputMethodHandler,
         output::{OutputHandler, OutputManagerState},
+        pointer_constraints::{
+            PointerConstraint, PointerConstraintsHandler, PointerConstraintsState,
+            with_pointer_constraint,
+        },
+        presentation::PresentationState,
+        relative_pointer::RelativePointerManagerState,
         selection::{
             SelectionHandler,
             data_device::{
@@ -63,6 +75,8 @@ use smithay::{
             decoration::{XdgDecorationHandler, XdgDecorationState},
         },
         shm::{ShmHandler, ShmState},
+        tablet_manager::TabletSeatHandler,
+        viewporter::ViewporterState,
     },
 };
 use smithay_drm_extras::drm_scanner;
@@ -114,6 +128,12 @@ pub struct App<B: Backend + 'static> {
     pub output_manager_state: OutputManagerState,
     pub xdg_shell_state: XdgShellState,
     pub xdg_decoration_state: XdgDecorationState,
+
+    pub presentation_state: PresentationState,
+    pub viewporter_state: ViewporterState,
+    pub cursor_shape_manager_state: CursorShapeManagerState,
+    pub pointer_constraints_state: PointerConstraintsState,
+    pub relative_pointer_manager_state: RelativePointerManagerState,
 
     pub popups: PopupManager,
 
@@ -273,15 +293,28 @@ impl<B: Backend> App<B> {
         let input_state = InputState::new(&mut seat);
         let xdg_decoration_state = XdgDecorationState::new::<Self>(dh);
 
+        let viewporter_state = ViewporterState::new::<Self>(dh);
+        let presentation_state = PresentationState::new::<Self>(dh, 1);
+        let fractional_scale_state = FractionalScaleManagerState::new::<Self>(dh);
+        let cursor_shape_manager_state = CursorShapeManagerState::new::<Self>(dh);
+        let pointer_constraints_state = PointerConstraintsState::new::<Self>(dh);
+        let relative_pointer_manager_state = RelativePointerManagerState::new::<Self>(dh);
+
         Ok(Self {
             compositor_state,
             data_device_state,
             seat_state,
             seat,
             shm_state,
-            //space,
             output_manager_state,
             xdg_shell_state,
+            presentation_state,
+            viewporter_state,
+            xdg_decoration_state,
+            cursor_shape_manager_state,
+            pointer_constraints_state,
+            relative_pointer_manager_state,
+
             popups,
             loop_signal,
             handle,
@@ -295,7 +328,6 @@ impl<B: Backend> App<B> {
             input_state,
             output_state: OutputState::default(),
             clock: Clock::new(),
-            xdg_decoration_state,
             sleep: false,
         })
     }
@@ -690,3 +722,34 @@ impl<B: Backend> XdgDecorationHandler for App<B> {
         toplevel.send_configure();
     }
 }
+
+delegate_viewporter!(@<B: Backend + 'static> App<B>);
+delegate_presentation!(@<B: Backend + 'static> App<B>);
+delegate_fractional_scale!(@<B: Backend + 'static> App<B>);
+
+impl<B: Backend> FractionalScaleHandler for App<B> {
+    fn new_fractional_scale(&mut self, surface: wayland_server::protocol::wl_surface::WlSurface) {
+        with_states(&surface, |states| {
+            fractional_scale::with_fractional_scale(states, |fractional_scale| {
+                fractional_scale.set_preferred_scale(1.0);
+            });
+        });
+    }
+}
+
+delegate_cursor_shape!(@<B: Backend> App<B>);
+impl<B: Backend> TabletSeatHandler for App<B> {}
+
+delegate_pointer_constraints!(@<B: Backend> App<B>);
+impl<B: Backend> PointerConstraintsHandler for App<B> {
+    fn new_constraint(&mut self, surface: &WlSurface, pointer: &PointerHandle<Self>) {}
+
+    fn cursor_position_hint(
+        &mut self,
+        surface: &WlSurface,
+        pointer: &PointerHandle<Self>,
+        location: Point<f64, Logical>,
+    ) {
+    }
+}
+delegate_relative_pointer!(@<B: Backend> App<B>);
