@@ -2,3 +2,7 @@ Cursor scale sources:
     Output scale
     XCURSOR_SIZE
     from plugin config
+
+Issues:
+    Black surface on resize (Firefox)
+    Run compostior with paused tty
