@@ -502,6 +502,14 @@ impl App<UdevData> {
             .clone();
 
         self.output_state.queue_render(&output);
+        let now = self.clock.now();
+
+        let space = &self.globals().space;
+        space.elements().for_each(|window| {
+            window.send_frame(&output, now, Some(Duration::ZERO), |_, _| {
+                Some(output.clone())
+            });
+        });
 
         //mayland.send_frame_callbacks(&output);
     }
